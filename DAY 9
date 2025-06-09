@@ -1,0 +1,184 @@
+// pages/[...all].js
+// This single file demonstrates dynamic routing, getStaticPaths, getStaticProps,
+// linking, and navigation (back/home buttons) within a Next.js application.
+
+import React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+
+// --- Simulated Data Source ---
+// In a real application, this data would come from an API, database, or CMS.
+const allPosts = [
+  { id: 1, slug: 'nextjs-basics', title: 'Getting Started with Next.js', content: 'This post covers the fundamental concepts of Next.js, including file-system routing and component structure. It is a great starting point for beginners.' },
+  { id: 2, slug: 'dynamic-routing-explained', title: 'Deep Dive into Dynamic Routing', content: 'Explore how dynamic routes like `[slug].js` simplify URL management and content delivery for a large number of pages. It’s a core feature for scalable applications.' },
+  { id: 3, slug: 'static-generation-power', title: 'Unleashing Static Site Generation', content: 'Understand the benefits of SSG for performance and SEO, and how `getStaticProps` and `getStaticPaths` work together to pre-render your site. Fast, secure, and highly performant.' },
+  { id: 4, slug: 'client-side-transitions', title: 'Smooth Client-Side Transitions with Link', content: 'Learn how Next.js `Link` component enables seamless page navigations without full page reloads, enhancing user experience significantly. It feels like a single-page app.' },
+];
+
+// Helper function to get all posts (for homepage)
+function getAllPosts() {
+  return allPosts;
+}
+
+// Helper function to get all slugs (for getStaticPaths)
+function getAllPostSlugs() {
+  return allPosts.map(post => ({
+    params: { slug: [post.slug] }, // Note: we wrap slug in an array for [...all].js
+  }));
+}
+
+// Helper function to get a single post by its slug (for getStaticProps)
+function getPostBySlug(slug) {
+  return allPosts.find(post => post.slug === slug);
+}
+
+// --- Home Page Component ---
+function HomePage({ posts }) {
+  return (
+    <div style={styles.container}>
+      <h1 style={styles.heading}>Welcome to My Next.js Blog!</h1>
+      <p style={styles.intro}>Explore our articles below:</p>
+      <ul style={styles.list}>
+        {posts.map((post) => (
+          <li key={post.id} style={styles.listItem}>
+            {/* Link each card to its dynamic detail page using the slug */}
+            <Link href={`/${post.slug}`} passHref> {/* Link directly to the slug */}
+              <a style={styles.card}>
+                <h2 style={styles.cardTitle}>{post.title} &rarr;</h2>
+                <p style={styles.cardDescription}>{post.content.substring(0, 100)}...</p>
+              </a>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// --- Post Detail Page Component ---
+function PostDetailPage({ post }) {
+  const router = useRouter();
+
+  // Handles fallback state if `fallback: true` in getStaticPaths
+  if (router.isFallback) {
+    return (
+      <div style={styles.loadingContainer}>
+        <p>Loading post details...</p>
+      </div>
+    );
+  }
+
+  // Handles case where post is not found (e.g., returned `notFound: true`)
+  if (!post) {
+    return (
+      <div style={styles.notFoundContainer}>
+        <h1>404 - Post Not Found</h1>
+        <p>The post you are looking for does not exist.</p>
+        <Link href="/" passHref>
+          <a style={styles.homeButton}>Go Home</a>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.container}>
+      <h1 style={styles.title}>{post.title}</h1>
+      <p style={styles.content}>{post.content}</p>
+
+      <div style={styles.navigation}>
+        {/* Back button using router.back() */}
+        <button onClick={() => router.back()} style={styles.backButton}>
+          &larr; Back
+        </button>
+        {/* Home button using Link component */}
+        <Link href="/" passHref>
+          <a style={styles.homeButton}>Go Home</a>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// --- Next.js Data Fetching Functions ---
+
+// getStaticPaths tells Next.js which paths (slugs) to pre-render at build time.
+// This function runs only at build time.
+export async function getStaticPaths() {
+  const paths = getAllPostSlugs(); // Get all possible slugs from our data source
+
+  return {
+    paths, // Array of paths: e.g., [{ params: { all: ['nextjs-basics'] } }]
+    fallback: false, // Set to `false`: Any path not returned by getStaticPaths will result in a 404.
+  };
+}
+
+// getStaticProps fetches data for a specific page based on the current path.
+// This function runs once for each path defined by getStaticPaths, at build time.
+export async function getStaticProps({ params }) {
+  const pathSegments = params.all; // For [...all].js, params.all is an array (e.g., ['nextjs-basics'])
+
+  // If pathSegments is empty, it's the homepage (root path '/')
+  if (!pathSegments || pathSegments.length === 0) {
+    const posts = getAllPosts(); // Fetch all posts for the homepage
+    return {
+      props: {
+        pageType: 'home', // Indicate this is the home page
+        posts,
+      },
+    };
+  }
+
+  // If pathSegments has content, it's a dynamic detail page
+  const slug = pathSegments[0]; // Assuming our slugs are at the first level (e.g., /nextjs-basics)
+  const post = getPostBySlug(slug); // Fetch the specific post data
+
+  if (!post) {
+    return {
+      notFound: true, // If no post is found for the given slug, show a 404 page.
+    };
+  }
+
+  return {
+    props: {
+      pageType: 'detail', // Indicate this is a detail page
+      post,
+    },
+    // revalidate: 60, // Optional: Uncomment to enable ISR.
+                       // Re-generates this page at most every 60 seconds if a request comes in.
+  };
+}
+
+
+// --- Main Component for [...all].js ---
+// This is the default export that Next.js uses.
+// It checks the `pageType` prop (determined by getStaticProps) to render the correct component.
+export default function AllRoutesHandler(props) {
+  if (props.pageType === 'home') {
+    return <HomePage posts={props.posts} />;
+  } else if (props.pageType === 'detail') {
+    return <PostDetailPage post={props.post} />;
+  }
+  // Should ideally not happen if getStaticProps handles all cases, but good for robustness
+  return <div style={styles.notFoundContainer}><h1>Error: Page Type Not Found</h1></div>;
+}
+
+
+// --- Basic Inline Styles (for quick demonstration) ---
+const styles = {
+  container: { fontFamily: 'Arial, sans-serif', maxWidth: '800px', margin: '40px auto', padding: '20px', border: '1px solid #ddd', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', backgroundColor: '#fff' },
+  heading: { textAlign: 'center', color: '#333', marginBottom: '20px' },
+  intro: { textAlign: 'center', color: '#555', marginBottom: '30px' },
+  list: { listStyle: 'none', padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' },
+  listItem: { margin: 0 },
+  card: { display: 'block', padding: '20px', border: '1px solid #eee', borderRadius: '8px', textDecoration: 'none', color: 'inherit', transition: 'transform 0.2s ease, box-shadow 0.2s ease', backgroundColor: '#f9f9f9', height: '100%', boxSizing: 'border-box' },
+  cardTitle: { fontSize: '1.2em', color: '#0070f3', marginBottom: '10px' },
+  cardDescription: { fontSize: '0.9em', color: '#666', lineHeight: '1.5' },
+  title: { color: '#333', marginBottom: '20px', textAlign: 'center', fontSize: '2em' },
+  content: { color: '#555', lineHeight: '1.8', fontSize: '1.1em', marginBottom: '40px' },
+  navigation: { display: 'flex', justifyContent: 'center', gap: '15px' },
+  backButton: { padding: '10px 20px', fontSize: '1em', cursor: 'pointer', backgroundColor: '#0070f3', color: 'white', border: 'none', borderRadius: '5px', transition: 'background-color 0.2s ease' },
+  homeButton: { padding: '10px 20px', fontSize: '1em', textDecoration: 'none', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '5px', transition: 'background-color 0.2s ease', display: 'inline-block', textAlign: 'center' },
+  loadingContainer: { fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: '50px', fontSize: '1.5em', color: '#777' },
+  notFoundContainer: { fontFamily: 'Arial, sans-serif', textAlign: 'center', padding: '50px', fontSize: '1.5em', color: '#d9534f' }
+};
