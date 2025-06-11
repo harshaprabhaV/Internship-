@@ -1,0 +1,252 @@
+import React, { useState } from 'react';
+
+// The ContactForm component itself
+const ContactForm = () => {
+  // State for form data: stores the current values of the name, email, and message inputs.
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: '',
+  });
+
+  // State for validation errors: stores error messages for each field, if any.
+  const [errors, setErrors] = useState({});
+
+  // State for submission message: displays success or failure messages to the user.
+  const [submissionMessage, setSubmissionMessage] = useState('');
+
+  // State for loading indicator: controls the display of a loading spinner during form submission.
+  const [isLoading, setIsLoading] = useState(false);
+
+  /**
+   * Handles changes to form input fields.
+   * Updates the formData state and clears any existing validation errors for the changed field.
+   * @param {Object} e - The event object from the input change.
+   */
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value, // Update the specific field by its 'name' attribute
+    });
+    // If there was an error for this field, clear it as the user types.
+    if (errors[name]) {
+      setErrors({
+        ...errors,
+        [name]: '', // Clear the error message for the current field
+      });
+    }
+  };
+
+  /**
+   * Validates the form fields before submission.
+   * Checks if Name, Email, and Message fields are non-empty.
+   * Performs a basic email format validation using a regular expression.
+   * Updates the 'errors' state with appropriate messages.
+   * @returns {boolean} - True if the form is valid, false otherwise.
+   */
+  const validateForm = () => {
+    let newErrors = {}; // Object to collect all validation errors
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Basic regex for email validation
+
+    // Validate Name field
+    if (!formData.name.trim()) { // .trim() removes whitespace from both ends of a string
+      newErrors.name = 'Name is required.';
+    }
+
+    // Validate Email field
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required.';
+    } else if (!emailRegex.test(formData.email)) { // Test email against regex
+      newErrors.email = 'Invalid email format.';
+    }
+
+    // Validate Message field
+    if (!formData.message.trim()) {
+      newErrors.message = 'Message is required.';
+    }
+
+    setErrors(newErrors); // Update the errors state
+    // Return true if no errors were found (i.e., newErrors object is empty)
+    return Object.keys(newErrors).length === 0;
+  };
+
+  /**
+   * Simulates an asynchronous API call for form submission.
+   * This function mimics a network request delay and returns a promise.
+   * In a real application, this could be a fetch() call to a Next.js API route or an external service.
+   * @param {Object} data - The form data to be "submitted".
+   * @returns {Promise<Object>} - A promise that resolves with a success object.
+   */
+  const mockApiSubmission = async (data) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        console.log('Form data submitted (mock API):', data);
+        // Simulate a successful response after 1 second
+        resolve({ success: true, message: 'Thank you for your message!' });
+        // To simulate an error, you would use:
+        // reject(new Error('Submission failed. Please try again.'));
+      }, 1000); // 1-second delay
+    });
+  };
+
+  /**
+   * Handles the form submission event.
+   * Prevents default form submission, validates fields, and if valid, calls the mock API.
+   * Updates submission messages and loading state accordingly.
+   * @param {Object} e - The event object from the form submission.
+   */
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent the browser's default form submission behavior
+
+    setSubmissionMessage(''); // Clear any previous submission messages
+    setIsLoading(true); // Set loading state to true to show spinner
+
+    const isValid = validateForm(); // Run validation
+
+    if (isValid) {
+      try {
+        // Attempt to "submit" the form data via the mock API
+        const response = await mockApiSubmission(formData);
+        if (response.success) {
+          setSubmissionMessage(response.message); // Display success message
+          setFormData({ name: '', email: '', message: '' }); // Clear the form fields
+          setErrors({}); // Clear any residual errors
+        } else {
+          // Fallback message if mock API indicates failure without a specific message
+          setSubmissionMessage(response.message || 'An unexpected error occurred.');
+        }
+      } catch (error) {
+        // Catch any errors thrown by the mock API (e.g., if it rejected)
+        setSubmissionMessage('Submission failed: ' + error.message);
+      } finally {
+        // This block always executes, regardless of success or failure
+        setIsLoading(false); // Hide loading indicator
+      }
+    } else {
+      // If validation fails, display a generic error message and hide loading
+      setSubmissionMessage('Please correct the errors in the form.');
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    // Main container for the form, centered on the screen with a light gray background.
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 font-sans">
+      {/* Form card: white background, rounded corners, shadow, responsive width */}
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Contact Us</h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name Field Group */}
+          <div>
+            <label htmlFor="name" className="block text-gray-700 text-sm font-medium mb-1">
+              Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name" // Important for handleChange to identify the field
+              value={formData.name}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+                ${errors.name ? 'border-red-500' : 'border-gray-300'}`} // Conditional styling for error
+              placeholder="Your Name"
+            />
+            {/* Display error message if 'name' error exists */}
+            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+          </div>
+
+          {/* Email Field Group */}
+          <div>
+            <label htmlFor="email" className="block text-gray-700 text-sm font-medium mb-1">
+              Email
+            </label>
+            <input
+              type="email" // Use type="email" for better mobile keyboard and basic browser validation
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+                ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+              placeholder="you@example.com"
+            />
+            {/* Display error message if 'email' error exists */}
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+          </div>
+
+          {/* Message Field Group */}
+          <div>
+            <label htmlFor="message" className="block text-gray-700 text-sm font-medium mb-1">
+              Message
+            </label>
+            <textarea
+              id="message"
+              name="message"
+              value={formData.message}
+              onChange={handleChange}
+              rows="5" // Set initial height for the textarea
+              className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500
+                ${errors.message ? 'border-red-500' : 'border-gray-300'}`}
+              placeholder="Your message here..."
+            ></textarea>
+            {/* Display error message if 'message' error exists */}
+            {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message}</p>}
+          </div>
+
+          {/* Submission Button */}
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700
+              transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+              flex items-center justify-center" // Flexbox for centering content (spinner/text)
+            disabled={isLoading} // Disable button when loading to prevent multiple submissions
+          >
+            {isLoading ? (
+              // Loading spinner SVG (Tailwind's animate-spin utility)
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            ) : (
+              'Submit' // Default button text
+            )}
+          </button>
+        </form>
+
+        {/* Submission Message Display */}
+        {submissionMessage && ( // Only render if submissionMessage is not empty
+          <div
+            className={`mt-6 p-3 rounded-lg text-center font-medium ${
+              submissionMessage.includes('Thank you') // Conditional styling based on message content
+                ? 'bg-green-100 text-green-700' // Success style
+                : 'bg-red-100 text-red-700' // Error style
+            }`}
+            role="alert" // ARIA role for accessibility
+          >
+            {submissionMessage}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ContactForm; // Export the component for use in Next.js pages
