@@ -1,0 +1,56 @@
+// pages/index.js
+import Head from 'next/head';
+import fs from 'fs/promises'; // Node.js file system module for reading data.json
+import path from 'path';     // Node.js path module for resolving file paths
+
+// This component will receive the 'posts' data as props
+export default function Home({ posts }) {
+  return (
+    <div>
+      <Head>
+        <title>My Blog</title>
+        <meta name="description" content="A simple blog powered by local JSON" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <main style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+        <h1>Welcome to My Blog!</h1>
+
+        {posts.length === 0 ? (
+          <p>No blog posts found.</p>
+        ) : (
+          posts.map((post) => (
+            <div key={post.id} style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '15px', marginBottom: '20px' }}>
+              <h2>{post.title}</h2>
+              <p><strong>Date:</strong> {post.date}</p>
+              <p><strong>Author:</strong> {post.author}</p>
+              <p>{post.content}</p>
+            </div>
+          ))
+        )}
+      </main>
+    </div>
+  );
+}
+
+// getStaticProps runs at build time on the server to fetch data
+export async function getStaticProps() {
+  const dataDirectory = path.join(process.cwd(), 'data'); // Get path to 'data' folder
+  const filePath = path.join(dataDirectory, 'data.json');  // Get full path to data.json
+
+  let posts = [];
+  try {
+    const fileContents = await fs.readFile(filePath, 'utf8'); // Read the file
+    posts = JSON.parse(fileContents); // Parse the JSON string into a JavaScript array
+  } catch (error) {
+    console.error('Error reading data.json:', error);
+    // You might want to return an empty array or handle the error more gracefully
+  }
+
+  // getStaticProps must return an object with a 'props' key
+  return {
+    props: {
+      posts, // This 'posts' array will be passed to the Home component
+    },
+  };
+}
