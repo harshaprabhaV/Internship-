@@ -1,0 +1,201 @@
+// app/blog-animated/page.js or pages/blog-animated.js
+// This directive marks the component as a Client Component, necessary for
+// using hooks like useState, useEffect, and interactive libraries like Framer Motion.
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion'; // Import Framer Motion for animations
+
+// --- Mock Data Fetching Simulation ---
+// This function simulates fetching data from an API or a database.
+// It includes a delay to visually demonstrate the loading state.
+const mockFetchPosts = () => {
+  return new Promise(resolve => {
+    setTimeout(() => { // Simulate a network delay of 1.5 seconds
+      const posts = [
+        { id: 1, title: 'Understanding Next.js Fundamentals', category: 'Web Development', content: '...' },
+        { id: 2, title: 'Optimizing Images in Next.js', category: 'Next.js Tips', content: '...' },
+        { id: 3, title: 'Building Robust APIs with Next.js', category: 'Backend Development', content: '...' },
+        { id: 4, title: 'Deploying Your Next.js App', category: 'DevOps', content: '...' },
+        { id: 5, title: 'Advanced State Management in Next.js', category: 'Web Development', content: '...' },
+        { id: 6, title: 'Client vs. Server Components', category: 'Next.js Concepts', content: '...' },
+        { id: 7, title: 'Implementing Authentication', category: 'Security', content: '...' },
+        { id: 8, title: 'Exploring Next.js App Router', category: 'Next.js Tips', content: '...' },
+        { id: 9, title: 'Performance Best Practices', category: 'Web Development', content: '...' },
+        { id: 10, title: 'Building Dynamic Routes', category: 'Next.js Concepts', content: '...' },
+      ];
+      resolve(posts); // Resolve the promise with the mock data
+    }, 1500); // 1.5 second delay
+  });
+};
+// --- End Mock Data ---
+
+
+// --- Framer Motion Animation Variants ---
+// These objects define reusable animation configurations.
+
+// Variants for the main page container (for page load animation)
+const containerVariants = {
+  hidden: { opacity: 0 }, // Initial state: invisible
+  visible: {
+    opacity: 1, // Final state: fully visible
+    transition: {
+      staggerChildren: 0.1, // Stagger the animation of child elements (cards)
+      when: "beforeChildren", // Parent animation completes before children start
+    },
+  },
+};
+
+// Variants for individual cards (for entry and hover animations)
+const cardVariants = {
+  hidden: { y: 20, opacity: 0 }, // Initial state: slightly below and invisible
+  visible: {
+    y: 0, // Final state: original Y position
+    opacity: 1, // Final state: visible
+    transition: {
+      type: "spring",    // Spring physics for natural movement
+      stiffness: 100,    // How stiff the spring is
+      damping: 10,       // How much the spring dampens its motion
+    },
+  },
+  hover: {
+    scale: 1.03, // Scale up 3% on hover
+    boxShadow: "0 8px 20px rgba(0,0,0,0.15)", // Stronger shadow on hover
+    transition: {
+      duration: 0.2 // Quick hover transition
+    }
+  }
+};
+
+
+// Main Component for Blog/Services Page with Animations and Loading
+export default function BlogOrServicesPage() {
+  const [searchTerm, setSearchTerm] = useState(''); // State for search input
+  const [posts, setPosts] = useState([]); // Stores all fetched posts
+  const [filteredPosts, setFilteredPosts] = useState([]); // Stores posts after filtering
+  const [loading, setLoading] = useState(true); // Manages loading state
+
+  // --- Effect for Data Fetching and Loading State ---
+  useEffect(() => {
+    const fetchAndSetPosts = async () => {
+      setLoading(true); // Set loading to true before fetching data
+      try {
+        const fetchedPosts = await mockFetchPosts(); // Await the mock API call
+        setPosts(fetchedPosts); // Update all posts
+        setFilteredPosts(fetchedPosts); // Initially, filtered posts are all posts
+      } catch (error) {
+        console.error("Failed to fetch posts:", error);
+        // Handle error: In a real app, display an error message to the user.
+      } finally {
+        setLoading(false); // Set loading to false once fetching is complete (success or error)
+      }
+    };
+
+    fetchAndSetPosts(); // Call the async function
+  }, []); // Empty dependency array ensures this runs only once on component mount
+
+  // --- Effect for Filtering Posts (relevant for combining with Day 3) ---
+  useEffect(() => {
+    // Only filter once the initial data has loaded
+    if (!loading) {
+      const lowercasedSearchTerm = searchTerm.toLowerCase();
+      const results = posts.filter(post =>
+        post.title.toLowerCase().includes(lowercasedSearchTerm) ||
+        post.category.toLowerCase().includes(lowercasedSearchTerm)
+      );
+      setFilteredPosts(results);
+    }
+  }, [searchTerm, posts, loading]); // Re-run when searchTerm, posts, or loading state changes
+
+  // --- Handler for Search Input Changes (relevant for combining with Day 3) ---
+  const handleSearchChange = (event) => {
+    setSearchTerm(event.target.value);
+  };
+
+  return (
+    // motion.div for the main page container to apply page load animations
+    <motion.div
+      className="blog-services-page-container"
+      initial="hidden" // Set initial animation state
+      animate="visible" // Animate to visible state
+      variants={containerVariants} // Apply defined variants
+    >
+      <h1 className="page-title">Our Blog & Services</h1>
+
+      <div className="search-bar-wrapper">
+        <input
+          type="text"
+          placeholder="Search by title or category..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="search-input"
+          disabled={loading} // Disable search input while data is loading
+          aria-label="Search blog posts or services"
+        />
+      </div>
+
+      {loading ? (
+        // --- Loading Spinner Display ---
+        <div className="loading-state">
+          <div className="spinner"></div>
+          <p>Loading posts...</p>
+        </div>
+      ) : (
+        // --- Display Filtered Cards with Animations ---
+        <motion.div className="cards-grid" variants={containerVariants}>
+          {filteredPosts.length > 0 ? (
+            filteredPosts.map(post => (
+              <motion.div
+                key={post.id}
+                className="blog-service-card"
+                variants={cardVariants} // Apply entry animation for each card
+                whileHover="hover"      // Apply hover animation
+                initial="hidden"        // Ensure cards start hidden for staggered animation
+                animate="visible"       // Animate cards to visible
+              >
+                <h3 className="card-title">{post.title}</h3>
+                <p className="card-category">Category: {post.category}</p>
+                {/* Placeholder for more content or a link */}
+                <button className="read-more-button">Read More</button>
+              </motion.div>
+            ))
+          ) : (
+            // Message when no results are found
+            <p className="no-results">No results found for &quot;{searchTerm}&quot;.</p>
+          )}
+        </motion.div>
+      )}
+
+      {/* --- Inline CSS for Styling and Responsiveness --- */}
+      {/* In a larger Next.js project, you would typically use global CSS (globals.css),
+          CSS Modules, or a CSS-in-JS library (e.g., styled-components, Tailwind CSS) */}
+      <style jsx>{`
+        /* Root variable for consistent font, can be moved to global.css */
+        :root {
+          --font-inter: 'Inter', sans-serif;
+        }
+
+        .blog-services-page-container {
+          padding: 2.5rem; /* ~40px padding */
+          max-width: 1200px; /* Max width for content */
+          margin: 0 auto; /* Center content horizontally */
+          background-color: #f8fafc; /* Light gray background */
+          min-height: 100vh; /* Full viewport height */
+          font-family: var(--font-inter); /* Apply Inter font */
+          color: #333; /* Dark gray text color */
+        }
+
+        .page-title {
+          text-align: center;
+          font-size: 2.5rem; /* Large title font size */
+          font-weight: 700; /* Bold font weight */
+          margin-bottom: 2.5rem; /* Space below title */
+          color: #1e293b; /* Darker title color */
+        }
+
+        .search-bar-wrapper {
+          margin-bottom: 2.5rem; /* Space below search bar */
+          width: 100%; /* Full width */
+        }
+
+        .search-in
