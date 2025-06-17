@@ -1,0 +1,52 @@
+
+
+export default function Custom404() {
+  // Function to handle navigation back to the homepage
+  const handleGoHome = (e) => {
+    e.preventDefault(); // Prevent default link behavior (full page reload)
+    window.location.href = '/'; // Navigate to the homepage
+  };
+
+  return (
+    <>
+      {/* Manually setting title and meta description for the document head */}
+      {/* In a true Next.js app, you would use next/head, but for this environment,
+          we simulate it or rely on the outer HTML document's head. */}
+      {/* Note: In this isolated React environment, direct manipulation of document.title
+          and meta tags might be needed if they don't apply automatically through this structure.
+          For a full Next.js project, the original `next/head` approach is correct. */}
+      <title>404 - Page Not Found</title>
+      <meta name="description" content="Oops! The page you are looking for does not exist." />
+      {/* Open Graph meta tags for social media sharing */}
+      <meta property="og:title" content="404 - Page Not Found" />
+      <meta property="og:description" content="Oops! The page you are looking for does not exist." />
+      <meta property="og:type" content="website" />
+
+      {/* Main container for the 404 page, centered and styled with Tailwind CSS */}
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-inter text-gray-800">
+        {/* Error message section */}
+        <div className="bg-white rounded-lg shadow-xl p-8 sm:p-12 text-center max-w-lg w-full">
+          {/* Large, prominent 404 text */}
+          <h1 className="text-9xl font-extrabold text-indigo-600 mb-6 animate-pulse">404</h1>
+          {/* Heading for page not found */}
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Page Not Found</h2>
+          {/* Descriptive text */}
+          <p className="text-lg text-gray-700 mb-8 leading-relaxed">
+            Oops! It looks like the page you're trying to reach doesn't exist or has been moved.
+            Don't worry, we'll help you find your way back.
+          </p>
+
+          {/* Navigation link back to the homepage using a standard anchor tag
+              and client-side navigation via JavaScript */}
+          <a href="/" onClick={handleGoHome} className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 ease-in-out transform hover:scale-105">
+            {/* Using a simple SVG arrow icon for visual appeal */}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            Go Back Home
+          </a>
+        </div>
+      </div>
+    </>
+  );
+}
