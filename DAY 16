@@ -1,0 +1,161 @@
+// This single file demonstrates the core NextAuth.js setup
+// for email/password mock validation and protecting a dashboard route.
+
+// --- 1. pages/api/auth/[...nextauth].js ---
+// This file handles all authentication logic for NextAuth.js
+import NextAuth from "next-auth";
+import Providers from "next-auth/providers";
+
+export default NextAuth({
+  // Define authentication providers
+  providers: [
+    Providers.Credentials({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "text", placeholder: "test@example.com" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        // --- Mock Validation ---
+        // In a real application, you'd query a database here
+        // to verify the user's email and securely hash the password.
+        if (credentials.email === "test@example.com" && credentials.password === "password123") {
+          // Return a user object on successful authentication
+          return { id: "1", name: "Test User", email: "test@example.com" };
+        }
+        // Return null if credentials are invalid
+        return null;
+      },
+    }),
+  ],
+  // Session strategy: using JWTs for stateless authentication
+  session: {
+    jwt: true,
+  },
+  // Callbacks to customize the JWT and session data
+  callbacks: {
+    async jwt(token, user) {
+      if (user) {
+        // Add user ID to the token for easier access in the client
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session(session, token) {
+      // Add user ID from token to the session object
+      session.user.id = token.id;
+      return session;
+    },
+  },
+  // Optional: Custom pages for sign-in, error, etc.
+  // pages: {
+  //   signIn: '/auth/signin', // Example custom sign-in page path
+  // },
+});
+
+// --- 2. pages/index.js ---
+// This will be your main login page
+import { signIn, useSession } from "next-auth/client"; // useSession for client-side checks
+import { useRouter } from "next/router";
+import { useEffect } from "react";
+
+export default function LoginPage() {
+  const [session, loading] = useSession();
+  const router = useRouter();
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    if (session) {
+      router.push("/dashboard");
+    }
+  }, [session, router]);
+
+  if (loading) {
+    return <p>Loading...</p>;
+  }
+
+  // Handle form submission for email/password login
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const email = e.target.email.value;
+    const password = e.target.password.value;
+
+    const result = await signIn("credentials", {
+      redirect: false, // Prevent NextAuth.js from redirecting automatically
+      email,
+      password,
+    });
+
+    if (result.error) {
+      alert(`Login failed: ${result.error}`);
+    } else {
+      // Manual redirection after successful login
+      router.push("/dashboard");
+    }
+  };
+
+  return (
+    <div>
+      <h1>Login / Sign Up</h1>
+      <form onSubmit={handleSubmit}>
+        <input type="email" name="email" placeholder="Email (test@example.com)" required />
+        <br />
+        <input type="password" name="password" placeholder="Password (password123)" required />
+        <br />
+        <button type="submit">Login with Email/Password</button>
+      </form>
+    </div>
+  );
+}
+
+
+// --- 3. pages/dashboard.js ---
+// This is your protected route
+import { useSession, signOut } from "next-auth/client";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
+
+export default function DashboardPage() {
+  const [session, loading] = useSession();
+  const router = useRouter();
+
+  // Redirect if not authenticated or session is loading
+  useEffect(() => {
+    if (!loading && !session) {
+      router.push("/"); // Redirect to login page
+    }
+  }, [session, loading, router]);
+
+  if (loading) {
+    return <p>Loading authentication...</p>;
+  }
+
+  if (!session) {
+    return <p>Access Denied. Please log in.</p>;
+  }
+
+  // If session exists, user is logged in
+  return (
+    <div>
+      <h1>Welcome to your Dashboard, {session.user.name || session.user.email}!</h1>
+      <p>This is a protected page. You can only see this after logging in.</p>
+      <button onClick={() => signOut()}>Logout</button>
+    </div>
+  );
+}
+
+// --- 4. _app.js (Important for NextAuth.js Provider) ---
+// Wrap your app with the NextAuth.js SessionProvider
+import { Provider as NextAuthProvider } from "next-auth/client";
+
+function MyApp({ Component, pageProps }) {
+  return (
+    // The <NextAuthProvider> is crucial for making the session
+    // available throughout your application.
+    <NextAuthProvider session={pageProps.session}>
+      <Component {...pageProps} />
+    </NextAuthProvider>
+  );
+}
+
+export default MyApp;
