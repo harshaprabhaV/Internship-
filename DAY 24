@@ -1,0 +1,294 @@
+// pages/contact.js
+import { useState } from 'react';
+import Head from 'next/head';
+
+export default function ContactPage() {
+  // State for form data
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: '',
+  });
+
+  // State for form validation errors
+  const [errors, setErrors] = useState({});
+
+  // State for submission status (loading, success, error)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
+
+  // Handles input changes and updates form data state
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
+    // Clear the error for the specific field as the user types
+    if (errors[name]) {
+      setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
+    }
+  };
+
+  // Validates form fields and updates the errors state
+  const validateForm = () => {
+    let newErrors = {};
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) { // Basic email regex validation
+      newErrors.email = 'Email is invalid';
+    }
+    if (!formData.message.trim()) {
+      newErrors.message = 'Message is required';
+    }
+    setErrors(newErrors); // Set all new errors found
+    // Return true if no errors were found, false otherwise
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handles form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent default form submission behavior
+
+    // Reset previous submission statuses
+    setSubmitSuccess(false);
+    setSubmitError(false);
+    setIsSubmitting(true); // Indicate that submission is in progress
+
+    // Validate the form before attempting submission
+    if (validateForm()) {
+      console.log('Attempting to submit form data:', formData);
+
+      try {
+        // Simulate an asynchronous API call to send the form data.
+        // In a real application, you would replace this with a fetch() or axios.post() call
+        // to your backend API endpoint (e.g., '/api/contact').
+        // Example of a real fetch call (commented out):
+        /*
+        const response = await fetch('/api/contact', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        if (!response.ok) {
+          // If the response is not OK (e.g., 400, 500 status codes), throw an error
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // If the API call was successful
+        // const result = await response.json(); // If your API returns JSON
+        // console.log('API response:', result);
+        */
+
+        // Simulate network delay for a more realistic user experience
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+
+        // If simulation or actual API call is successful
+        setSubmitSuccess(true);
+        setFormData({ name: '', email: '', message: '' }); // Clear the form fields
+        setErrors({}); // Clear any validation errors
+      } catch (error) {
+        console.error('Form submission failed:', error);
+        setSubmitError(true); // Set error state
+      } finally {
+        setIsSubmitting(false); // End submission process
+      }
+    } else {
+      // If validation fails, stop the submission process
+      setIsSubmitting(false);
+      console.log('Form validation failed.');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 py-8">
+      {/* Head component for SEO and page metadata */}
+      <Head>
+        <title>Contact Us - Your Company</title>
+        <meta name="description" content="Get in touch with us for inquiries, feedback, or support. Find our location in Viluppuram, Tamil Nadu." />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+
+      <main className="container mx-auto px-4 py-8">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-center text-gray-800 mb-12">
+          Get in Touch
+        </h1>
+
+        {/* Contact Form Section */}
+        <section className="max-w-3xl mx-auto bg-white p-8 md:p-10 rounded-xl shadow-lg mb-16">
+          <p className="text-gray-700 text-lg text-center mb-8">
+            We'd love to hear from you! Please fill out the form below.
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-1">
+                Your Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
+                  errors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="John Doe"
+                disabled={isSubmitting} // Disable input while submitting
+                aria-invalid={errors.name ? "true" : "false"} // ARIA for accessibility
+                aria-describedby={errors.name ? "name-error" : null}
+              />
+              {errors.name && (
+                <p id="name-error" className="text-red-500 text-sm mt-1">
+                  {errors.name}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1">
+                Your Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ${
+                  errors.email ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="you@example.com"
+                disabled={isSubmitting}
+                aria-invalid={errors.email ? "true" : "false"}
+                aria-describedby={errors.email ? "email-error" : null}
+              />
+              {errors.email && (
+                <p id="email-error" className="text-red-500 text-sm mt-1">
+                  {errors.email}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="message" className="block text-sm font-semibold text-gray-700 mb-1">
+                Your Message
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows="6"
+                value={formData.message}
+                onChange={handleChange}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 resize-y ${
+                  errors.message ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Tell us how we can help..."
+                disabled={isSubmitting}
+                aria-invalid={errors.message ? "true" : "false"}
+                aria-describedby={errors.message ? "message-error" : null}
+              ></textarea>
+              {errors.message && (
+                <p id="message-error" className="text-red-500 text-sm mt-1">
+                  {errors.message}
+                </p>
+              )}
+            </div>
+
+            {/* Submission Status Messages */}
+            {submitSuccess && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-md relative" role="alert">
+                <strong className="font-bold">Success!</strong>
+                <span className="block sm:inline ml-2">Your message has been sent. We'll be in touch soon.</span>
+              </div>
+            )}
+
+            {submitError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative" role="alert">
+                <strong className="font-bold">Error!</strong>
+                <span className="block sm:inline ml-2">There was an issue sending your message. Please try again.</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmitting} // Disable button while submitting
+            >
+              {isSubmitting ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Sending...
+                </span>
+              ) : (
+                'Send Message'
+              )}
+            </button>
+          </form>
+        </section>
+
+        {/* Location/Map Section */}
+        <section className="bg-white p-8 md:p-10 rounded-xl shadow-lg">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-center text-gray-800 mb-8">
+            Our Location
+          </h2>
+          <div className="flex flex-col md:flex-row items-stretch gap-8">
+            {/* Contact Details */}
+            <div className="md:w-1/2 w-full text-center md:text-left p-4">
+              <p className="text-gray-700 text-lg mb-4 leading-relaxed">
+                You can find us at our office during business hours. We're always happy to meet our clients and collaborators.
+              </p>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-gray-800 text-xl mb-1">Address:</h3>
+                  <p className="text-gray-600 text-base">
+                    123 Innovation Drive, <br />
+                    Knowledge City, <br />
+                    Viluppuram, Tamil Nadu, 605602 <br />
+                    India
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800 text-xl mb-1">Email:</h3>
+                  <p className="text-blue-600 hover:underline text-base">
+                    <a href="mailto:info@yourcompany.com">info@yourcompany.com</a>
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-800 text-xl mb-1">Phone:</h3>
+                  <p className="text-gray-600 text-base">
+                    +91 98765 43210
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Google Map Embed */}
+            <div className="md:w-1/2 w-full h-80 md:h-auto rounded-lg overflow-hidden shadow-lg border border-gray-200">
+              {/* Replace the 'src' attribute with your actual Google Maps embed code for your specific location */}
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15615.12028689531!2d79.4799015965706!3d11.942732924185764!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3a52e737c0f1b265%3A0xc3c544c7989a3d46!2sViluppuram%2C%20Tamil%20Nadu%20605602!5e0!3m2!1sen!2sin!4v1719630985172!5m2!1sen!2sin"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen=""
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Our office location on Google Maps in Viluppuram"
+                className="rounded-lg" // Apply rounded corners to the iframe too
+              ></iframe>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
